@@ -3,7 +3,7 @@
 use chrono::Utc;
 use hyper::{Body, Client, Method, Request, Response};
 use hyper::{Error, StatusCode};
-use svc_template_rust_client_rest::types::*;
+use svc_discovery_client_rest::types::*;
 
 fn evaluate(resp: Result<Response<Body>, Error>, expected_code: StatusCode) -> (bool, String) {
     let mut ok = true;

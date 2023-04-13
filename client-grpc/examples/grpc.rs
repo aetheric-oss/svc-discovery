@@ -2,7 +2,7 @@
 
 use std::env;
 #[allow(unused_qualifications, missing_docs)]
-use svc_template_rust_client_grpc::client::{rpc_service_client::RpcServiceClient, ReadyRequest};
+use svc_discovery_client_grpc::client::{rpc_service_client::RpcServiceClient, ReadyRequest};
 
 /// Provide endpoint url to use
 pub fn get_grpc_endpoint() -> String {

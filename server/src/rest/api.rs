@@ -22,7 +22,7 @@ pub use rest_types::ExampleRequest;
 #[utoipa::path(
     get,
     path = "/health",
-    tag = "svc-template-rust",
+    tag = "svc-discovery",
     responses(
         (status = 200, description = "Service is healthy, all dependencies running."),
         (status = 503, description = "Service is unhealthy, one or more dependencies unavailable.")
@@ -76,7 +76,7 @@ pub async fn health_check(
 #[utoipa::path(
     post,
     path = "/template/example",
-    tag = "svc-template-rust",
+    tag = "svc-discovery",
     request_body = ExampleRequest,
     responses(
         (status = 200, description = "Request successful.", body = String),

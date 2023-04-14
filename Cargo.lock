@@ -1594,7 +1594,7 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "svc-discovery"
-version = "0.0.1"
+version = "0.0.2-develop.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -1623,7 +1623,7 @@ dependencies = [
 
 [[package]]
 name = "svc-discovery-client-grpc"
-version = "0.0.1"
+version = "0.0.2-develop.0"
 dependencies = [
  "prost",
  "prost-types",
@@ -1633,7 +1633,7 @@ dependencies = [
 
 [[package]]
 name = "svc-discovery-client-rest"
-version = "0.0.1"
+version = "0.0.2-develop.0"
 dependencies = [
  "chrono",
  "hyper",

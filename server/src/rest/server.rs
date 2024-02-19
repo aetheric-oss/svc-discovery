@@ -23,8 +23,16 @@ pub async fn rest_server(config: Config) {
     };
 
     let app = Router::new()
-        .route("/health", routing::get(api::health_check)) // MUST HAVE
-        .route("/template/example", routing::post(api::example))
+        .route("/health", routing::get(api::health::health_check)) // MUST HAVE
+        .route("/uss/flights", routing::get(api::uss::get_flights))
+        // .route(
+        //     "/uss/identification_service_areas/:id",
+        //     routing::get(api::get_isas),
+        // )
+        // .route(
+        //     "/uss/flights/:id/details",
+        //     routing::get(api::get_flight_details),
+        // )
         .layer(Extension(grpc_clients)); // Extension layer must be last
 
     rest_info!("(rest) hosted at {:?}", full_rest_addr);

@@ -142,7 +142,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_flights_recent_positions() {
-        let grpc_clients = Extension(crate::grpc::client::GrpcClients::default());
+        let config = crate::config::Config::default();
+        let grpc_clients = Extension(crate::grpc::client::GrpcClients::default(config));
 
         let request = GetFlightsRequest {
             view: "0.0,0.0,0.0".to_string(),
@@ -176,7 +177,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_flights_view() {
-        let grpc_clients = Extension(crate::grpc::client::GrpcClients::default());
+        let config = crate::config::Config::default();
+        let grpc_clients = Extension(crate::grpc::client::GrpcClients::default(config));
 
         // invalid - too many coordinates
         let request = GetFlightsRequest {

@@ -13,7 +13,7 @@ use svc_discovery::Cli;
 #[cfg(not(tarpaulin_include))]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Will use default config settings if no environment vars are found.
-    let config = Config::from_env().unwrap_or_default();
+    let config = Config::try_from_env().unwrap_or_default();
 
     dotenv().ok();
     {

@@ -12,7 +12,7 @@ pub async fn rest_server(config: Config) {
     use std::net::SocketAddr;
 
     rest_debug!("(rest_server) entry.");
-    let grpc_clients = GrpcClients::default();
+    let grpc_clients = GrpcClients::default(config.clone());
     let rest_port = config.docker_port_rest;
     let full_rest_addr: SocketAddr = match format!("[::]:{}", rest_port).parse() {
         Ok(addr) => addr,

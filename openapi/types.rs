@@ -30,6 +30,15 @@ pub struct Time {
     pub format: String
 }
 
+impl Default for Time {
+    fn default() -> Time {
+        Time {
+            value: Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+            format: RFC3339_FORMAT_STRING.to_string()
+        }
+    }
+}
+
 /// An altitude with variable reference and units
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, IntoParams)]
 pub struct Altitude {

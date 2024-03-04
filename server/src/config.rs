@@ -20,6 +20,13 @@ pub struct Config {
     pub gis_host_grpc: String,
     /// port for the gis gRPC server
     pub gis_port_grpc: u16,
+    /// Rate limit - requests per second for REST requests
+    pub rest_request_limit_per_second: u8,
+    /// Enforces a limit on the concurrent number of requests the underlying service can handle
+    pub rest_concurrency_limit_per_service: u8,
+    /// Full url (including port number) to be allowed as request origin for
+    /// REST requests
+    pub rest_cors_allowed_origin: String,
 }
 
 impl Default for Config {
@@ -37,6 +44,9 @@ impl Config {
             log_config: String::from("log4rs.yaml"),
             gis_host_grpc: String::from("localhost"),
             gis_port_grpc: 50052,
+            rest_request_limit_per_second: 2,
+            rest_concurrency_limit_per_service: 5,
+            rest_cors_allowed_origin: String::from("http://localhost:3000"),
         }
     }
 
@@ -52,6 +62,18 @@ impl Config {
             .set_default("log_config", default_config.log_config)?
             .set_default("gis_host_grpc", default_config.gis_host_grpc)?
             .set_default("gis_port_grpc", default_config.gis_port_grpc)?
+            .set_default(
+                "rest_concurrency_limit_per_service",
+                default_config.rest_concurrency_limit_per_service,
+            )?
+            .set_default(
+                "rest_request_limit_per_seconds",
+                default_config.rest_request_limit_per_second,
+            )?
+            .set_default(
+                "rest_cors_allowed_origin",
+                default_config.rest_cors_allowed_origin,
+            )?
             .add_source(Environment::default().separator("__"))
             .build()?
             .try_deserialize()

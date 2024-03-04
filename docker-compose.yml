@@ -15,6 +15,12 @@ services:
     extends:
       file: docker-compose-base.yml
       service: web-server
+    environment:
+      - GIS_PORT_GRPC
+      - GIS_HOST_GRPC
+      - REST_REQUEST_LIMIT_PER_SECOND
+      - REST_CONCURRENCY_LIMIT_PER_SERVICE
+      - REST_CORS_ALLOWED_ORIGIN
 
   example:
     extends:

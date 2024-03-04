@@ -5,9 +5,14 @@ use super::rest_types::*;
 use crate::grpc::client::GrpcClients;
 use axum::extract::Query;
 use axum::{Extension, Json};
+use chrono::{DateTime, Duration, Utc};
 use geo::algorithm::haversine_distance::HaversineDistance;
 use hyper::StatusCode;
-
+use num_traits::FromPrimitive;
+use svc_gis_client_grpc::client::GetFlightsRequest as GisFlightsRequest;
+use svc_gis_client_grpc::prelude::AircraftType;
+use svc_gis_client_grpc::prelude::GisServiceClient;
+use svc_gis_client_grpc::prelude::OperationalStatus;
 const MAX_DISPLAY_AREA_DIAGONAL_METERS: f64 = 7_000.0;
 
 /// A window for a given area of interest defined by two opposite corners
@@ -34,10 +39,137 @@ async fn check_isas(_grpc_clients: &mut GrpcClients, _window: &Window) -> Result
     Ok(false)
 }
 
+impl From<AircraftType> for UAType {
+    fn from(t: AircraftType) -> Self {
+        match t {
+            AircraftType::Undeclared => UAType::NotDeclared,
+            AircraftType::Aeroplane => UAType::Aeroplane,
+            AircraftType::Glider => UAType::Glider,
+            AircraftType::Gyroplane => UAType::Gyroplane,
+            AircraftType::Ornithopter => UAType::Ornithopter,
+            AircraftType::Hybridlift => UAType::HybridLift,
+            AircraftType::Kite => UAType::Kite,
+            AircraftType::Freeballoon => UAType::FreeBalloon,
+            AircraftType::Captiveballoon => UAType::CaptiveBalloon,
+            AircraftType::Airship => UAType::Airship,
+            AircraftType::Rocket => UAType::Rocket,
+            AircraftType::Tethered => UAType::TetheredPoweredAircraft,
+            AircraftType::Groundobstacle => UAType::GroundObstacle,
+            AircraftType::Other => UAType::Other,
+            AircraftType::Unpowered => UAType::FreeFallOrParachute,
+            AircraftType::Rotorcraft => UAType::Helicopter, // includes multirotor
+        }
+    }
+}
+
+impl From<OperationalStatus> for RIDOperationalStatus {
+    fn from(s: OperationalStatus) -> Self {
+        match s {
+            OperationalStatus::Undeclared => RIDOperationalStatus::Undeclared,
+            OperationalStatus::Ground => RIDOperationalStatus::Ground,
+            OperationalStatus::Airborne => RIDOperationalStatus::Airborne,
+            OperationalStatus::Emergency => RIDOperationalStatus::Emergency,
+            OperationalStatus::RemoteIdSystemFailure => RIDOperationalStatus::RemoteIDSystemFailure,
+        }
+    }
+}
+
+impl TryFrom<svc_gis_client_grpc::client::AircraftState> for RIDAircraftState {
+    type Error = StatusCode;
+
+    fn try_from(state: svc_gis_client_grpc::client::AircraftState) -> Result<Self, Self::Error> {
+        let timestamp: DateTime<Utc> = match state.timestamp {
+            Some(t) => t.into(),
+            None => {
+                rest_error!("(RIDAircraftState::try_from) timestamp is required.");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        let Some(position) = state.position else {
+            rest_error!("(RIDAircraftState::try_from) position is required.");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        };
+
+        let status: OperationalStatus = match FromPrimitive::from_i32(state.status) {
+            Some(s) => s,
+            None => {
+                rest_error!("(RIDAircraftState::try_from) status is required.");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        Ok(RIDAircraftState {
+            timestamp: Time {
+                value: timestamp.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                ..Default::default()
+            },
+            timestamp_accuracy: 0.0,
+            operational_status: status.into(),
+            position: RIDAircraftPosition {
+                lat: position.latitude,
+                lng: position.longitude,
+                alt: position.altitude_meters,
+                accuracy_h: HorizontalAccuracy::HAUnknown,
+                accuracy_v: VerticalAccuracy::VAUnknown,
+                extrapolated: false,
+                pressure_alt: position.altitude_meters,
+                height: RIDHeight {
+                    distance: position.altitude_meters,
+                    reference: RIDHeightReference::GroundLevel,
+                },
+            },
+            track: state.track_angle_degrees,
+            speed: state.ground_speed_mps,
+            speed_accuracy: SpeedAccuracy::SAUnknown,
+            vertical_speed: state.vertical_speed_mps,
+        })
+    }
+}
+
+impl TryFrom<svc_gis_client_grpc::client::TimePosition> for RIDRecentAircraftPosition {
+    type Error = StatusCode;
+
+    fn try_from(position: svc_gis_client_grpc::client::TimePosition) -> Result<Self, Self::Error> {
+        let timestamp: DateTime<Utc> = match position.timestamp {
+            Some(t) => t.into(),
+            None => {
+                rest_error!("(RIDRecentAircraftPosition::try_from) timestamp is required.");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        let Some(position) = position.position else {
+            rest_error!("(RIDAircraftPosition::try_from) position is required.");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        };
+
+        Ok(RIDRecentAircraftPosition {
+            time: Time {
+                value: timestamp.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                ..Default::default()
+            },
+            position: RIDAircraftPosition {
+                lat: position.latitude,
+                lng: position.longitude,
+                alt: position.altitude_meters,
+                accuracy_h: HorizontalAccuracy::HAUnknown,
+                accuracy_v: VerticalAccuracy::VAUnknown,
+                extrapolated: false,
+                pressure_alt: position.altitude_meters,
+                height: RIDHeight {
+                    distance: position.altitude_meters,
+                    reference: RIDHeightReference::GroundLevel,
+                },
+            },
+        })
+    }
+}
+
 /// Get recent flights for a given area from svc-gis
 async fn get_recent_flights(
-    _grpc_clients: &mut GrpcClients,
-    _window: &Window,
+    grpc_clients: &mut GrpcClients,
+    window: &Window,
     duration_s: f32,
 ) -> Result<Vec<RIDFlight>, StatusCode> {
     if !(0.0..=60.0).contains(&duration_s) {
@@ -47,8 +179,61 @@ async fn get_recent_flights(
         return Ok(vec![]);
     }
 
-    // TODO(R4): grpc call to svc-gis
-    Ok(vec![])
+    let time_start = Utc::now() - Duration::milliseconds((duration_s * 1000.0) as i64);
+    let time_end = Utc::now();
+    let request = GisFlightsRequest {
+        window_min_x: window.lon1,
+        window_min_y: window.lat1,
+        window_max_x: window.lon2,
+        window_max_y: window.lat2,
+        time_start: Some(time_start.into()),
+        time_end: Some(time_end.into()),
+    };
+
+    grpc_clients
+        .gis
+        .get_flights(request)
+        .await
+        .map_err(|e| {
+            rest_error!("(get_recent_flights) gRPC call to svc-gis failed: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .into_inner()
+        .flights
+        .into_iter()
+        .map(|f| {
+            let Some(state) = f.state else {
+                rest_error!("(get_recent_flights) state is required.");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            };
+
+            let aircraft_type: AircraftType = match FromPrimitive::from_i32(f.aircraft_type) {
+                Some(t) => t,
+                None => {
+                    rest_error!(
+                        "(get_recent_flights) aircraft_type not recognized, using NotDeclared."
+                    );
+                    AircraftType::Undeclared
+                }
+            };
+
+            Ok(RIDFlight {
+                id: f.identifier.unwrap_or("".to_string()),
+                aircraft_type: aircraft_type.into(),
+                operating_area: OperatingArea {
+                    aircraft_count: 0, // TODO(R5)
+                    volumes: vec![],   // TODO(R5)
+                },
+                simulated: f.simulated,
+                current_state: state.try_into()?,
+                recent_positions: f
+                    .positions
+                    .into_iter()
+                    .map(RIDRecentAircraftPosition::try_from)
+                    .collect::<Result<Vec<_>, _>>()?,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()
 }
 
 /// Parse a coordinate (float) from a string

@@ -33,3 +33,10 @@ isas
 seccomp
 Lcov
 Aeroplane
+hybridlift
+freeballoon
+captiveballoon
+groundobstacle
+rotorcraft
+unpowered
+multirotor

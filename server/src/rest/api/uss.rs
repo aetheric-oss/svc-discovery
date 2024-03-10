@@ -190,7 +190,7 @@ async fn get_recent_flights(
         time_end: Some(time_end.into()),
     };
 
-    grpc_clients
+    let flights = grpc_clients
         .gis
         .get_flights(request)
         .await
@@ -210,7 +210,7 @@ async fn get_recent_flights(
             let aircraft_type: AircraftType = match FromPrimitive::from_i32(f.aircraft_type) {
                 Some(t) => t,
                 None => {
-                    rest_error!(
+                    rest_warn!(
                         "(get_recent_flights) aircraft_type not recognized, using NotDeclared."
                     );
                     AircraftType::Undeclared
@@ -233,7 +233,10 @@ async fn get_recent_flights(
                     .collect::<Result<Vec<_>, _>>()?,
             })
         })
-        .collect::<Result<Vec<_>, _>>()
+        .collect::<Result<Vec<_>, _>>()?;
+
+    rest_debug!("(get_recent_flights) returning {} flights.", flights.len());
+    Ok(flights)
 }
 
 /// Parse a coordinate (float) from a string
@@ -255,7 +258,10 @@ fn parse_coordinate(coordinate: &str, lat: bool) -> Result<f64, StatusCode> {
 }
 
 /// Validate the input for the get_flights endpoint
-fn validate_get_flights_request(payload: &GetFlightsRequest) -> Result<Window, StatusCode> {
+fn validate_get_flights_request(
+    payload: &GetFlightsRequest,
+    diagonal_limit_meters: Option<f64>,
+) -> Result<Window, StatusCode> {
     if payload.recent_positions_duration < 0.0 || payload.recent_positions_duration > 60.0 {
         rest_error!("(validate_get_flights_request) recent_positions_duration must be >= 0.0.");
         return Err(StatusCode::BAD_REQUEST);
@@ -276,9 +282,11 @@ fn validate_get_flights_request(payload: &GetFlightsRequest) -> Result<Window, S
         lon2: parse_coordinate(values[3], false)?,
     };
 
-    if window.diagonal() > MAX_DISPLAY_AREA_DIAGONAL_METERS {
-        rest_error!("(get_flights) The requested view rectangle was too large.");
-        return Err(StatusCode::PAYLOAD_TOO_LARGE);
+    if let Some(limit) = diagonal_limit_meters {
+        if window.diagonal() > limit {
+            rest_error!("(get_flights) The requested view rectangle was too large.");
+            return Err(StatusCode::PAYLOAD_TOO_LARGE);
+        }
     }
 
     Ok(window)
@@ -306,7 +314,44 @@ pub async fn get_flights(
 
     // TODO(R5): 403 and 401 are not implemented yet
 
-    let window = validate_get_flights_request(&query)?;
+    let window = validate_get_flights_request(&query, Some(MAX_DISPLAY_AREA_DIAGONAL_METERS))?;
+    let response = GetFlightsResponse {
+        flights: get_recent_flights(
+            &mut grpc_clients.clone(),
+            &window,
+            query.recent_positions_duration,
+        )
+        .await?,
+        no_isas_present: !check_isas(&mut grpc_clients.clone(), &window).await?,
+        ..Default::default() // applies current timestamp
+    };
+
+    Ok(Json(response))
+}
+
+/// Get flights for a given area
+#[utoipa::path(
+    get,
+    path = "/demo/flights",
+    tag = "svc-discovery",
+    request_body = GetFlightsRequest,
+    responses(
+        (status = 200, description = "Flight information was successfully retrieved.", body = String),
+        (status = 400, description = "One or more input parameters were missing or invalid."),
+        (status = 401, description = "Bearer access token was not provided in Authorization header, token could not be decoded, or token was invalid."),
+        (status = 403, description = "The access token was decoded successfully but did not include a scope appropriate to this endpoint."),
+        (status = 413, description = "The requested view rectangle was too large.")
+    )
+)]
+pub async fn demo_flights(
+    Extension(grpc_clients): Extension<GrpcClients>,
+    Query(query): Query<GetFlightsRequest>,
+) -> Result<Json<GetFlightsResponse>, StatusCode> {
+    rest_debug!("(get_flights) entry.");
+
+    // TODO(R5): 403 and 401 are not implemented yet
+
+    let window = validate_get_flights_request(&query, None)?;
     let response = GetFlightsResponse {
         flights: get_recent_flights(
             &mut grpc_clients.clone(),

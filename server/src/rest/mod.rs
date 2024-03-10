@@ -12,6 +12,7 @@ use utoipa::OpenApi;
 #[openapi(
     paths(
         api::uss::get_flights,
+        api::uss::demo_flights
     ),
     components(
         schemas(

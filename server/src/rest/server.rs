@@ -62,6 +62,7 @@ pub async fn rest_server(config: Config) -> Result<(), ()> {
     let app = Router::new()
         .route("/health", routing::get(api::health::health_check)) // MUST HAVE
         .route("/uss/flights", routing::get(api::uss::get_flights))
+        .route("/demo/flights", routing::get(api::uss::demo_flights))
         // .route(
         //     "/uss/identification_service_areas/:id",
         //     routing::get(api::get_isas),

@@ -2,7 +2,7 @@
 description = "Arrow discovery service GRPC server"
 keywords    = ["vtol", "u-space", "grpc", "rest", "discovery"] # max 5
 name        = "svc-discovery"
-version     = "0.0.2-develop.1"
+version     = "0.0.2-develop.3"
 
 categories.workspace   = true
 edition.workspace      = true

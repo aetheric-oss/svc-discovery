@@ -218,7 +218,9 @@ async fn get_recent_flights(
             };
 
             Ok(RIDFlight {
-                id: f.identifier.unwrap_or("".to_string()),
+                id: f
+                    .session_id
+                    .unwrap_or(f.aircraft_id.unwrap_or("UNK".to_string())),
                 aircraft_type: aircraft_type.into(),
                 operating_area: OperatingArea {
                     aircraft_count: 0, // TODO(R5)

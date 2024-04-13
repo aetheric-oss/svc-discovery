@@ -7,7 +7,7 @@ edition      = "2021"
 homepage     = "https://www.arrowair.com/docs/documentation/services/intro"
 keywords     = ["vtol", "server", "template"]                               # max 5
 license-file = "LICENSE"
-repository   = "https://github.com/Arrow-air/svc-discovery"
+repository   = "https://github.com/aetheric-oss/svc-discovery"
 
 categories = [
   "aerospace::drones",

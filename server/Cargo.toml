@@ -2,7 +2,7 @@
 description = "Arrow discovery service GRPC server"
 keywords    = ["vtol", "u-space", "grpc", "rest", "discovery"] # max 5
 name        = "svc-discovery"
-version     = "0.0.2-develop.4"
+version     = "0.0.2-develop.3"
 
 categories.workspace   = true
 edition.workspace      = true
@@ -52,12 +52,12 @@ tower        = { version = "0.4", features = ["limit", "util"] }
 tower-http   = { version = "0.4", features = ["cors", "trace"] }
 
 [dependencies.svc-gis-client-grpc]
-git = "https://github.com/Arrow-air/svc-gis.git"
+git = "https://github.com/aetheric-oss/svc-gis.git"
 tag = "latest-develop"
 
 [dependencies.lib-common]
 features = ["grpc"]
-git      = "https://github.com/Arrow-air/lib-common.git"
+git      = "https://github.com/aetheric-oss/lib-common.git"
 tag      = "latest-develop"
 
 [dependencies.utoipa]

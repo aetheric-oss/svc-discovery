@@ -142,7 +142,7 @@ checksum = "69f7f8c3906b62b754cd5326047894316021dcfe5a194c8ea52bdd94934a3457"
 [[package]]
 name = "arrow-macros-core"
 version = "0.2.1-develop.0"
-source = "git+https://github.com/Arrow-air/lib-common.git?tag=latest-develop#4ccaa5c1e59f5c8dc2a5efd97b7f17e0e6fa1692"
+source = "git+https://github.com/aetheric-oss/lib-common.git?tag=latest-develop#4ccaa5c1e59f5c8dc2a5efd97b7f17e0e6fa1692"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -153,7 +153,18 @@ dependencies = [
 [[package]]
 name = "arrow-macros-core"
 version = "0.2.1-develop.0"
-source = "git+https://github.com/Arrow-air/lib-common?tag=v0.2.1-develop.0#ab297fda939b316ad4778dba2711e626246e048b"
+source = "git+https://github.com/Arrow-air/lib-common?tag=latest-develop#4ccaa5c1e59f5c8dc2a5efd97b7f17e0e6fa1692"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.58",
+]
+
+[[package]]
+name = "arrow-macros-core"
+version = "0.2.1-develop.0"
+source = "git+https://github.com/Arrow-air/lib-common.git?tag=v0.2.1-develop.0#ab297fda939b316ad4778dba2711e626246e048b"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -164,9 +175,9 @@ dependencies = [
 [[package]]
 name = "arrow-macros-derive"
 version = "0.2.1-develop.0"
-source = "git+https://github.com/Arrow-air/lib-common.git?tag=latest-develop#4ccaa5c1e59f5c8dc2a5efd97b7f17e0e6fa1692"
+source = "git+https://github.com/aetheric-oss/lib-common.git?tag=latest-develop#4ccaa5c1e59f5c8dc2a5efd97b7f17e0e6fa1692"
 dependencies = [
- "arrow-macros-core 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common.git?tag=latest-develop)",
+ "arrow-macros-core 0.2.1-develop.0 (git+https://github.com/aetheric-oss/lib-common.git?tag=latest-develop)",
  "proc-macro-error",
  "proc-macro2",
 ]
@@ -174,9 +185,19 @@ dependencies = [
 [[package]]
 name = "arrow-macros-derive"
 version = "0.2.1-develop.0"
-source = "git+https://github.com/Arrow-air/lib-common?tag=v0.2.1-develop.0#ab297fda939b316ad4778dba2711e626246e048b"
+source = "git+https://github.com/Arrow-air/lib-common?tag=latest-develop#4ccaa5c1e59f5c8dc2a5efd97b7f17e0e6fa1692"
 dependencies = [
- "arrow-macros-core 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common?tag=v0.2.1-develop.0)",
+ "arrow-macros-core 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common?tag=latest-develop)",
+ "proc-macro-error",
+ "proc-macro2",
+]
+
+[[package]]
+name = "arrow-macros-derive"
+version = "0.2.1-develop.0"
+source = "git+https://github.com/Arrow-air/lib-common.git?tag=v0.2.1-develop.0#ab297fda939b316ad4778dba2711e626246e048b"
+dependencies = [
+ "arrow-macros-core 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common.git?tag=v0.2.1-develop.0)",
  "proc-macro-error",
  "proc-macro2",
 ]
@@ -624,9 +645,9 @@ dependencies = [
 
 [[package]]
 name = "either"
-version = "1.10.0"
+version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11157ac094ffbdde99aa67b23417ebdd801842852b500e395a45a9c0aac03e4a"
+checksum = "a47c1c47d2f5964e29c61246e81db715514cd532db6b5116a25ea3c03d6780a2"
 
 [[package]]
 name = "equivalent"
@@ -1183,9 +1204,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 [[package]]
 name = "lib-common"
 version = "0.2.1-develop.0"
-source = "git+https://github.com/Arrow-air/lib-common.git?tag=latest-develop#4ccaa5c1e59f5c8dc2a5efd97b7f17e0e6fa1692"
+source = "git+https://github.com/aetheric-oss/lib-common.git?tag=latest-develop#4ccaa5c1e59f5c8dc2a5efd97b7f17e0e6fa1692"
 dependencies = [
- "arrow-macros-derive 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common.git?tag=latest-develop)",
+ "arrow-macros-derive 0.2.1-develop.0 (git+https://github.com/aetheric-oss/lib-common.git?tag=latest-develop)",
  "cargo-husky",
  "chrono",
  "futures",
@@ -1199,9 +1220,21 @@ dependencies = [
 [[package]]
 name = "lib-common"
 version = "0.2.1-develop.0"
-source = "git+https://github.com/Arrow-air/lib-common?tag=v0.2.1-develop.0#ab297fda939b316ad4778dba2711e626246e048b"
+source = "git+https://github.com/Arrow-air/lib-common?tag=latest-develop#4ccaa5c1e59f5c8dc2a5efd97b7f17e0e6fa1692"
 dependencies = [
- "arrow-macros-derive 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common?tag=v0.2.1-develop.0)",
+ "arrow-macros-derive 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common?tag=latest-develop)",
+ "cargo-husky",
+ "chrono",
+ "prost-wkt-types",
+ "trybuild",
+]
+
+[[package]]
+name = "lib-common"
+version = "0.2.1-develop.0"
+source = "git+https://github.com/Arrow-air/lib-common.git?tag=v0.2.1-develop.0#ab297fda939b316ad4778dba2711e626246e048b"
+dependencies = [
+ "arrow-macros-derive 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common.git?tag=v0.2.1-develop.0)",
  "cargo-husky",
  "chrono",
  "futures",
@@ -1386,9 +1419,9 @@ dependencies = [
 
 [[package]]
 name = "num"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b05180d69e3da0e530ba2a1dae5110317e49e3b7f3d41be227dc5f92e49ee7af"
+checksum = "3135b08af27d103b0a51f2ae0f8632117b7b185ccf931445affa8df530576a41"
 dependencies = [
  "num-bigint",
  "num-complex",
@@ -2486,7 +2519,7 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 name = "svc-discovery"
-version = "0.0.2-develop.4"
+version = "0.0.2-develop.3"
 dependencies = [
  "anyhow",
  "axum",
@@ -2498,7 +2531,7 @@ dependencies = [
  "futures",
  "geo",
  "hyper",
- "lib-common 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common.git?tag=latest-develop)",
+ "lib-common 0.2.1-develop.0 (git+https://github.com/aetheric-oss/lib-common.git?tag=latest-develop)",
  "log",
  "log4rs",
  "num-traits",
@@ -2536,7 +2569,7 @@ version = "0.0.2-develop.4"
 dependencies = [
  "chrono",
  "hyper",
- "lib-common 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common.git?tag=latest-develop)",
+ "lib-common 0.2.1-develop.0 (git+https://github.com/aetheric-oss/lib-common.git?tag=latest-develop)",
  "serde",
  "serde_json",
  "strum 0.26.2",
@@ -2548,7 +2581,7 @@ dependencies = [
 [[package]]
 name = "svc-gis"
 version = "0.1.1-develop.10"
-source = "git+https://github.com/Arrow-air/svc-gis.git?tag=latest-develop#a37b1e183ec43e6067c0056f01efee80569e4c25"
+source = "git+https://github.com/aetheric-oss/svc-gis.git?tag=latest-develop#a37b1e183ec43e6067c0056f01efee80569e4c25"
 dependencies = [
  "anyhow",
  "axum",
@@ -2563,7 +2596,7 @@ dependencies = [
  "futures",
  "geo",
  "hyper",
- "lib-common 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common.git?tag=latest-develop)",
+ "lib-common 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common?tag=latest-develop)",
  "log",
  "log4rs",
  "native-tls",
@@ -2596,11 +2629,11 @@ dependencies = [
 [[package]]
 name = "svc-gis-client-grpc"
 version = "0.1.1-develop.10"
-source = "git+https://github.com/Arrow-air/svc-gis.git?tag=latest-develop#a37b1e183ec43e6067c0056f01efee80569e4c25"
+source = "git+https://github.com/aetheric-oss/svc-gis.git?tag=latest-develop#a37b1e183ec43e6067c0056f01efee80569e4c25"
 dependencies = [
  "cfg-if",
  "chrono",
- "lib-common 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common?tag=v0.2.1-develop.0)",
+ "lib-common 0.2.1-develop.0 (git+https://github.com/Arrow-air/lib-common.git?tag=v0.2.1-develop.0)",
  "log",
  "num-derive",
  "num-traits",

@@ -1,5 +1,5 @@
 [package]
-description = "Arrow discovery service GRPC client"
+description = "Aetheric discovery service GRPC client"
 name        = "svc-discovery-client-grpc"
 version     = "0.0.2-develop.5"
 

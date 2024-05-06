@@ -3,6 +3,8 @@
 use crate::grpc::client::GrpcClients;
 use axum::extract::Extension;
 use hyper::StatusCode;
+use svc_gis_client_grpc::client::ReadyRequest;
+use svc_gis_client_grpc::prelude::GisServiceClient;
 
 /// Provides a way to tell a caller if the service is healthy.
 /// Checks dependencies, making sure all connections can be made.
@@ -16,36 +18,16 @@ use hyper::StatusCode;
     )
 )]
 pub async fn health_check(
-    Extension(mut _grpc_clients): Extension<GrpcClients>,
+    Extension(grpc_clients): Extension<GrpcClients>,
 ) -> Result<(), StatusCode> {
     rest_debug!("(health_check) entry.");
 
-    let ok = true;
+    let mut ok = true;
 
-    // FIXME - uncomment this when you have a dependency
-    // This health check is to verify that ALL dependencies of this
-    // microservice are running.
-
-    // let result = grpc_clients.storage.get_client().await;
-    // if result.is_none() {
-    //     let error_msg = "svc-storage unavailable.".to_string();
-    //     rest_error!("(health_check) {}", &error_msg);
-    //     ok = false;
-    // };
-
-    // let result = grpc_clients.pricing.get_client().await;
-    // if result.is_none() {
-    //     let error_msg = "svc-pricing unavailable.".to_string();
-    //     rest_error!("(health_check) {}", &error_msg);
-    //     ok = false;
-    // };
-
-    // let result = grpc_clients.scheduler.get_client().await;
-    // if result.is_none() {
-    //     let error_msg = "svc-scheduler unavailable.".to_string();
-    //     rest_error!("(health_check) {}", &error_msg);
-    //     ok = false;
-    // };
+    if grpc_clients.gis.is_ready(ReadyRequest {}).await.is_err() {
+        rest_error!("(health_check) svc-gis client unavailable.");
+        ok = false;
+    };
 
     match ok {
         true => {
@@ -56,5 +38,18 @@ pub async fn health_check(
             rest_error!("(health_check) unhealthy, 1+ dependencies down.");
             Err(StatusCode::SERVICE_UNAVAILABLE)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_health_check() {
+        let config = crate::config::Config::default();
+        let clients = GrpcClients::default(config);
+        let result = health_check(Extension(clients)).await;
+        assert!(result.is_ok());
     }
 }

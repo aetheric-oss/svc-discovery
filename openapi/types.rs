@@ -281,7 +281,7 @@ impl Default for GetFlightsResponse {
 }
 
 /// The type of aircraft
-#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize)]
+#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize,PartialEq)]
 #[derive(ToSchema)]
 #[schema(default="NotDeclared")]
 pub enum UAType {
@@ -335,7 +335,7 @@ pub enum UAType {
 }
 
 /// Vertical accuracy of position in meters
-#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize)]
+#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize, PartialEq)]
 #[derive(ToSchema)]
 #[schema(default="VAUnknown")]
 pub enum VerticalAccuracy {
@@ -365,7 +365,7 @@ pub enum VerticalAccuracy {
 }
 
 /// Horizontal accuracy of position in meters
-#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize)]
+#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize, PartialEq)]
 #[derive(ToSchema)]
 #[schema(default="HAUnknown")]
 pub enum HorizontalAccuracy {
@@ -413,7 +413,7 @@ pub enum HorizontalAccuracy {
 }
 
 /// The reference for the height
-#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize)]
+#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize, PartialEq)]
 #[derive(ToSchema)]
 pub enum RIDHeightReference {
     /// Takeoff location
@@ -424,7 +424,7 @@ pub enum RIDHeightReference {
 }
 
 /// The reference for the vertical distance
-#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize)]
+#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize, PartialEq)]
 #[derive(ToSchema)]
 pub enum SpeedAccuracy {
     /// Unknown
@@ -447,7 +447,7 @@ pub enum SpeedAccuracy {
 }
 
 /// The operational status of the aircraft
-#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize)]
+#[derive(Debug, Display, Copy, Clone, EnumString, EnumIter, Serialize, Deserialize, PartialEq)]
 #[derive(ToSchema)]
 #[schema(default="Undeclared")]
 pub enum RIDOperationalStatus {

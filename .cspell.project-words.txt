@@ -40,3 +40,6 @@ groundobstacle
 rotorcraft
 unpowered
 multirotor
+uatype
+timeframe
+lookback

@@ -6,9 +6,11 @@ pub mod macros;
 pub mod api;
 pub mod server;
 
+use std::fmt::{self, Display, Formatter};
 use utoipa::OpenApi;
 
-#[derive(OpenApi)]
+/// OpenAPI 3.0 specification for this service
+#[derive(OpenApi, Copy, Clone, Debug)]
 #[openapi(
     paths(
         api::uss::get_flights,
@@ -44,15 +46,63 @@ use utoipa::OpenApi;
         (name = "svc-discovery", description = "svc-discovery REST API")
     )
 )]
-struct ApiDoc;
+#[cfg(not(tarpaulin_include))]
+pub struct ApiDoc;
 
-/// Create OpenAPI3 Specification File
-pub fn generate_openapi_spec(target: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let output = ApiDoc::openapi()
-        .to_pretty_json()
-        .expect("(ERROR) unable to write openapi specification to json.");
+/// Errors with OpenAPI generation
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum OpenApiError {
+    /// Failed to export as JSON string
+    Json,
 
-    std::fs::write(target, output).expect("(ERROR) unable to write json string to file.");
+    /// Failed to write to file
+    FileWrite,
+}
 
-    Ok(())
+impl std::error::Error for OpenApiError {}
+
+impl Display for OpenApiError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            OpenApiError::Json => write!(f, "Failed to export as JSON string"),
+            OpenApiError::FileWrite => write!(f, "Failed to write to file"),
+        }
+    }
+}
+
+/// Create OpenAPI 3.0 Specification File
+pub fn generate_openapi_spec<T>(target: &str) -> Result<(), OpenApiError>
+where
+    T: OpenApi,
+{
+    let output = T::openapi().to_pretty_json().map_err(|e| {
+        rest_error!("(generate_openapi_spec) failed to export as JSON string: {e}");
+        OpenApiError::Json
+    })?;
+
+    std::fs::write(target, output).map_err(|e| {
+        rest_error!("(generate_openapi_spec) failed to write to file: {e}");
+        OpenApiError::FileWrite
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_openapi_spec() {
+        let target = "/nonsense/";
+        let error = generate_openapi_spec::<ApiDoc>(target).unwrap_err();
+        assert_eq!(error, OpenApiError::FileWrite);
+
+        // TODO(R5): Is it possible to make the JSON export fail?
+        // #[derive(OpenApi)]
+        // #[openapi(
+        //     paths(invalid)
+        // )]
+        // struct InvalidApi;
+        // let error = generate_openapi_spec::<InvalidApi>("test.json").unwrap_err();
+        // assert_eq!(error, OpenApiError::Json);
+    }
 }

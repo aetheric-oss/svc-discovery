@@ -1,7 +1,7 @@
 [package]
 description = "Types used to communicate with the REST API of svc-discovery."
 name        = "svc-discovery-client-rest"
-version     = "0.0.2-develop.5"
+version     = "0.0.2-develop.6"
 
 categories.workspace   = true
 edition.workspace      = true

@@ -47,6 +47,7 @@ use utoipa::OpenApi;
     )
 )]
 #[cfg(not(tarpaulin_include))]
+// no_coverage: (Rnever) OpenAPI 3.0 specification, integration tested
 pub struct ApiDoc;
 
 /// Errors with OpenAPI generation
@@ -76,12 +77,12 @@ where
     T: OpenApi,
 {
     let output = T::openapi().to_pretty_json().map_err(|e| {
-        rest_error!("(generate_openapi_spec) failed to export as JSON string: {e}");
+        rest_error!("failed to export as JSON string: {e}");
         OpenApiError::Json
     })?;
 
     std::fs::write(target, output).map_err(|e| {
-        rest_error!("(generate_openapi_spec) failed to write to file: {e}");
+        rest_error!("failed to write to file: {e}");
         OpenApiError::FileWrite
     })
 }

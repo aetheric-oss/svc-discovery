@@ -45,14 +45,14 @@ mod tests {
     #[tokio::test]
     async fn test_grpc_clients_default() {
         get_log_handle().await;
-        ut_info!("(test_grpc_clients_default) Start.");
+        ut_info!("Start.");
 
         let clients = get_clients().await;
 
         let gis = &clients.gis;
-        ut_debug!("(test_grpc_clients_default) gis: {:?}", gis);
+        ut_debug!("gis: {:?}", gis);
         assert_eq!(gis.get_name(), "gis");
 
-        ut_info!("(test_grpc_clients_default) Success.");
+        ut_info!("Success.");
     }
 }

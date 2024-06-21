@@ -41,12 +41,11 @@ impl RpcService for GRPCServerImpl {
 /// use svc_discovery::config::Config;
 /// async fn example() -> Result<(), tokio::task::JoinError> {
 ///     let config = Config::default();
-///     tokio::spawn(grpc_server(config)).await
+///     tokio::spawn(grpc_server(config, None)).await
 /// }
 /// ```
-#[cfg(not(tarpaulin_include))]
-pub async fn grpc_server(config: Config) {
-    grpc_debug!("(grpc_server) entry.");
+pub async fn grpc_server(config: Config, shutdown_rx: Option<tokio::sync::oneshot::Receiver<()>>) {
+    grpc_debug!("entry.");
 
     // GRPC Server
     let grpc_port = config.docker_port_grpc;
@@ -69,7 +68,7 @@ pub async fn grpc_server(config: Config) {
     match Server::builder()
         .add_service(health_service)
         .add_service(RpcServiceServer::new(imp))
-        .serve_with_shutdown(full_grpc_addr, shutdown_signal("grpc"))
+        .serve_with_shutdown(full_grpc_addr, shutdown_signal("grpc", shutdown_rx))
         .await
     {
         Ok(_) => grpc_info!("gRPC server running at: {}.", full_grpc_addr),
@@ -77,4 +76,31 @@ pub async fn grpc_server(config: Config) {
             grpc_error!("could not start gRPC server: {}", e);
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_grpc_server_start_and_shutdown() {
+        use tokio::time::{sleep, Duration};
+        lib_common::logger::get_log_handle().await;
+        ut_info!("start");
+
+        let config = Config::default();
+
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+
+        // Start the grpc server
+        tokio::spawn(grpc_server(config, Some(shutdown_rx)));
+
+        // Give the server time to get through the startup sequence (and thus code)
+        sleep(Duration::from_secs(1)).await;
+
+        // Shut down server
+        assert!(shutdown_tx.send(()).is_ok());
+
+        ut_info!("success");
+    }
 }

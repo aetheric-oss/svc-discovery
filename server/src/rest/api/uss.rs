@@ -5,9 +5,9 @@ use super::rest_types::*;
 use crate::grpc::client::GrpcClients;
 use axum::extract::Query;
 use axum::{Extension, Json};
-use chrono::{DateTime, Duration, Utc};
 use geo::algorithm::haversine_distance::HaversineDistance;
 use hyper::StatusCode;
+use lib_common::time::{DateTime, Duration, SecondsFormat, Utc};
 use num_traits::FromPrimitive;
 use svc_gis_client_grpc::client::GetFlightsRequest as GisFlightsRequest;
 use svc_gis_client_grpc::prelude::AircraftType;
@@ -34,7 +34,7 @@ impl Window {
 
 /// Check if there are identification service areas for a given RID
 async fn check_isas(_grpc_clients: &mut GrpcClients, _window: &Window) -> Result<bool, StatusCode> {
-    // TODO(R4): grpc call to svc-gis
+    // TODO(R5): grpc call to svc-gis
     // with optional 'check' parameter to return no values
     Ok(false)
 }
@@ -81,24 +81,24 @@ impl TryFrom<svc_gis_client_grpc::client::AircraftState> for RIDAircraftState {
         let timestamp: DateTime<Utc> = state
             .timestamp
             .ok_or_else(|| {
-                rest_error!("(RIDAircraftState::try_from) timestamp is required.");
+                rest_error!("timestamp is required.");
                 StatusCode::INTERNAL_SERVER_ERROR
             })?
             .into();
 
         let position = state.position.ok_or_else(|| {
-            rest_error!("(RIDAircraftState::try_from) position is missing.");
+            rest_error!("position is missing.");
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
         let status: OperationalStatus = FromPrimitive::from_i32(state.status).ok_or_else(|| {
-            rest_error!("(RIDAircraftState::try_from) status is required.");
+            rest_error!("status is required.");
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
         Ok(RIDAircraftState {
             timestamp: Time {
-                value: timestamp.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                value: timestamp.to_rfc3339_opts(SecondsFormat::Millis, true),
                 ..Default::default()
             },
             timestamp_accuracy: 0.0,
@@ -131,19 +131,19 @@ impl TryFrom<svc_gis_client_grpc::client::TimePosition> for RIDRecentAircraftPos
         let timestamp: DateTime<Utc> = position
             .timestamp
             .ok_or_else(|| {
-                rest_error!("(RIDRecentAircraftPosition::try_from) timestamp is required.");
+                rest_error!("timestamp is required.");
                 StatusCode::INTERNAL_SERVER_ERROR
             })?
             .into();
 
         let position = position.position.ok_or_else(|| {
-            rest_error!("(RIDAircraftPosition::try_from) position is missing.");
+            rest_error!("position is missing.");
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
         let result = RIDRecentAircraftPosition {
             time: Time {
-                value: timestamp.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                value: timestamp.to_rfc3339_opts(SecondsFormat::Millis, true),
                 ..Default::default()
             },
             position: RIDAircraftPosition {
@@ -170,7 +170,7 @@ impl TryFrom<svc_gis_client_grpc::client::Flight> for RIDFlight {
 
     fn try_from(f: svc_gis_client_grpc::client::Flight) -> Result<Self, Self::Error> {
         let state = f.state.ok_or_else(|| {
-            rest_error!("(RIDFlight::try_from) state is required.");
+            rest_error!("state is required.");
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
@@ -211,7 +211,7 @@ async fn get_recent_flights(
     duration_s: f32,
 ) -> Result<Vec<RIDFlight>, StatusCode> {
     if !(0.0..=60.0).contains(&duration_s) {
-        rest_error!("(get_recent_flights) duration_s must be >= 0.0.");
+        rest_error!("duration_s must be >= 0.0.");
         return Err(StatusCode::BAD_REQUEST);
     } else if duration_s == 0.0 {
         return Ok(vec![]);
@@ -222,7 +222,7 @@ async fn get_recent_flights(
         || window.lon1.abs() > 180.0
         || window.lon2.abs() > 180.0
     {
-        rest_error!("(get_recent_flights) Invalid window coordinates.");
+        rest_error!("Invalid window coordinates.");
         return Err(StatusCode::BAD_REQUEST);
     }
 
@@ -242,7 +242,7 @@ async fn get_recent_flights(
         .get_flights(request)
         .await
         .map_err(|e| {
-            rest_error!("(get_recent_flights) gRPC call to svc-gis failed: {:?}", e);
+            rest_error!("gRPC call to svc-gis failed: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?
         .into_inner()
@@ -251,22 +251,22 @@ async fn get_recent_flights(
         .map(TryInto::<RIDFlight>::try_into)
         .collect::<Result<Vec<_>, _>>()?;
 
-    rest_debug!("(get_recent_flights) returning {} flights.", flights.len());
+    rest_debug!("returning {} flights.", flights.len());
     Ok(flights)
 }
 
 /// Parse a coordinate (float) from a string
 fn parse_coordinate(coordinate: &str, lat: bool) -> Result<f64, StatusCode> {
     let value = coordinate.parse::<f64>().map_err(|e| {
-        rest_error!("(parse_coordinate) view must be a string of format 'lat1,lon1,lat2,lon2' with floating point values: {:?}", e);
+        rest_error!("view must be a string of format 'lat1,lon1,lat2,lon2' with floating point values: {:?}", e);
         StatusCode::BAD_REQUEST
     })?;
 
     if lat && !(-90.0..=90.0).contains(&value) {
-        rest_error!("(parse_coordinate) latitude must be between -90.0 and 90.0.");
+        rest_error!("latitude must be between -90.0 and 90.0.");
         return Err(StatusCode::BAD_REQUEST);
     } else if !lat && !(-180.0..=180.0).contains(&value) {
-        rest_error!("(parse_coordinate) longitude must be between -180.0 and 180.0.");
+        rest_error!("longitude must be between -180.0 and 180.0.");
         return Err(StatusCode::BAD_REQUEST);
     }
 
@@ -279,15 +279,13 @@ fn validate_get_flights_request(
     diagonal_limit_meters: Option<f64>,
 ) -> Result<Window, StatusCode> {
     if payload.recent_positions_duration < 0.0 || payload.recent_positions_duration > 60.0 {
-        rest_error!("(validate_get_flights_request) recent_positions_duration must be >= 0.0.");
+        rest_error!("recent_positions_duration must be >= 0.0.");
         return Err(StatusCode::BAD_REQUEST);
     }
 
     let values = payload.view.split(',').collect::<Vec<&str>>();
     if values.len() != 4 {
-        rest_error!(
-            "(validate_get_flights_request) view must be a string of format 'lat1,lon1,lat2,lon2'."
-        );
+        rest_error!("view must be a string of format 'lat1,lon1,lat2,lon2'.");
         return Err(StatusCode::BAD_REQUEST);
     }
 
@@ -301,12 +299,12 @@ fn validate_get_flights_request(
     if let Some(limit) = diagonal_limit_meters {
         let diagonal = window.diagonal();
         // rest_debug!(
-        //     "(validate_get_flights_request) diagonal: {}, limit: {}",
+        //     "diagonal: {}, limit: {}",
         //     diagonal,
         //     limit
         // );
         if diagonal > limit {
-            rest_error!("(get_flights) The requested view rectangle was too large.");
+            rest_error!("The requested view rectangle was too large.");
             return Err(StatusCode::PAYLOAD_TOO_LARGE);
         }
     }
@@ -332,7 +330,7 @@ pub async fn get_flights(
     Extension(grpc_clients): Extension<GrpcClients>,
     Query(query): Query<GetFlightsRequest>,
 ) -> Result<Json<GetFlightsResponse>, StatusCode> {
-    rest_debug!("(get_flights) entry.");
+    rest_debug!("entry.");
 
     // TODO(R5): 403 and 401 are not implemented yet
 
@@ -369,7 +367,7 @@ pub async fn demo_flights(
     Extension(grpc_clients): Extension<GrpcClients>,
     Query(query): Query<GetFlightsRequest>,
 ) -> Result<Json<GetFlightsResponse>, StatusCode> {
-    rest_debug!("(get_flights) entry.");
+    rest_debug!("entry.");
 
     // TODO(R5): 403 and 401 are not implemented yet
 
@@ -489,7 +487,7 @@ mod tests {
         let result: RIDAircraftState = state.clone().try_into().unwrap();
         assert_eq!(
             result.timestamp.value,
-            now.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+            now.to_rfc3339_opts(SecondsFormat::Millis, true)
         );
         assert_eq!(result.operational_status, RIDOperationalStatus::Undeclared);
         assert_eq!(result.position.lat, expected_point.latitude);
@@ -543,7 +541,7 @@ mod tests {
         let result: RIDRecentAircraftPosition = position.clone().try_into().unwrap();
         assert_eq!(
             result.time.value,
-            now.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+            now.to_rfc3339_opts(SecondsFormat::Millis, true)
         );
         assert_eq!(result.position.lat, expected_point.latitude);
         assert_eq!(result.position.lng, expected_point.longitude);

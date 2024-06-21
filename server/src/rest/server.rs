@@ -20,22 +20,37 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
 /// Starts the REST API server for this microservice
-#[cfg(not(tarpaulin_include))]
-pub async fn rest_server(config: Config) -> Result<(), ()> {
-    rest_info!("(rest_server) entry.");
+///
+/// # Example:
+/// ```
+/// use svc_discovery::rest::server::rest_server;
+/// use svc_discovery::grpc::client::GrpcClients;
+/// use svc_gis_client_grpc::prelude::types::{AircraftPosition, AircraftVelocity, AircraftId};
+/// use svc_discovery::Config;
+/// use std::collections::VecDeque;
+/// use std::sync::{Arc, Mutex};
+/// async fn example() -> Result<(), tokio::task::JoinError> {
+///     let config = Config::default();
+///     let grpc_clients = GrpcClients::default(config.clone());
+///     tokio::spawn(rest_server(config, None)).await;
+///     Ok(())
+/// }
+/// ```
+pub async fn rest_server(
+    config: Config,
+    shutdown_rx: Option<tokio::sync::oneshot::Receiver<()>>,
+) -> Result<(), ()> {
+    rest_info!("entry.");
     let rest_port = config.docker_port_rest;
     let full_rest_addr: SocketAddr = format!("[::]:{}", rest_port).parse().map_err(|e| {
-        rest_error!("(rest_server) invalid address: {:?}, exiting.", e);
+        rest_error!("invalid address: {:?}, exiting.", e);
     })?;
 
     let cors_allowed_origin = config
         .rest_cors_allowed_origin
         .parse::<HeaderValue>()
         .map_err(|e| {
-            rest_error!(
-                "(rest_server) invalid cors_allowed_origin address: {:?}, exiting.",
-                e
-            );
+            rest_error!("invalid cors_allowed_origin address: {:?}, exiting.", e);
         })?;
 
     // Rate limiting
@@ -44,7 +59,7 @@ pub async fn rest_server(config: Config) -> Result<(), ()> {
     let limit_middleware = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .layer(HandleErrorLayer::new(|e: BoxError| async move {
-            rest_warn!("(server) too many requests: {}", e);
+            rest_warn!("too many requests: {}", e);
             (
                 StatusCode::TOO_MANY_REQUESTS,
                 "(server) too many requests.".to_string(),
@@ -57,7 +72,7 @@ pub async fn rest_server(config: Config) -> Result<(), ()> {
             std::time::Duration::from_secs(1),
         ));
 
-    rest_debug!("(rest_server) entry.");
+    rest_debug!("entry.");
     let grpc_clients = GrpcClients::default(config.clone());
     let app = Router::new()
         .route("/health", routing::get(api::health::health_check)) // MUST HAVE
@@ -80,14 +95,41 @@ pub async fn rest_server(config: Config) -> Result<(), ()> {
         .layer(limit_middleware)
         .layer(Extension(grpc_clients)); // Extension layer must be last
 
-    rest_info!("(rest) hosted at {:?}", full_rest_addr);
+    rest_info!("hosted at {:?}", full_rest_addr);
     axum::Server::bind(&full_rest_addr)
         .serve(app.into_make_service())
-        .with_graceful_shutdown(shutdown_signal("rest"))
+        .with_graceful_shutdown(shutdown_signal("rest", shutdown_rx))
         .await
         .map_err(|e| {
             rest_error!("could not start REST server: {}", e);
         })?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_server_start_and_shutdown() {
+        use tokio::time::{sleep, Duration};
+        lib_common::logger::get_log_handle().await;
+        ut_info!("start");
+
+        let config = Config::default();
+
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+
+        // Start the rest server
+        tokio::spawn(rest_server(config, Some(shutdown_rx)));
+
+        // Give the server time to get through the startup sequence (and thus code)
+        sleep(Duration::from_secs(1)).await;
+
+        // Shut down server
+        assert!(shutdown_tx.send(()).is_ok());
+
+        ut_info!("success");
+    }
 }

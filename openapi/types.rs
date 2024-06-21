@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
-use chrono::Utc;
+use lib_common::time::{SecondsFormat, Utc};
 use std::fmt::Debug;
 use strum::{EnumString, Display, EnumIter};
 
@@ -33,7 +33,7 @@ pub struct Time {
 impl Default for Time {
     fn default() -> Time {
         Time {
-            value: Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+            value: Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true),
             format: RFC3339_FORMAT_STRING.to_string()
         }
     }
@@ -271,7 +271,7 @@ impl Default for GetFlightsResponse {
     fn default() -> GetFlightsResponse {
         GetFlightsResponse {
             timestamp: Time {
-                value: Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                value: Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true),
                 format: RFC3339_FORMAT_STRING.to_string()
             },
             flights: Vec::new(),

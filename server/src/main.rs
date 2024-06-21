@@ -13,6 +13,7 @@ use svc_discovery::Cli;
 /// Main entry point: starts gRPC Server on specified address and port
 #[tokio::main]
 #[cfg(not(tarpaulin_include))]
+// no_coverage: (Rnever) Main function, integration tested
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Will use default config settings if no environment vars are found.
     let config = Config::try_from_env()
@@ -33,10 +34,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Start REST server
-    tokio::spawn(rest_server(config.clone()));
+    tokio::spawn(rest_server(config.clone(), None));
 
     // Start gRPC server
-    let _ = tokio::spawn(grpc_server(config)).await;
+    let _ = tokio::spawn(grpc_server(config, None)).await;
 
     info!("Server shutdown.");
 

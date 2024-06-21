@@ -20,22 +20,22 @@ use svc_gis_client_grpc::prelude::GisServiceClient;
 pub async fn health_check(
     Extension(grpc_clients): Extension<GrpcClients>,
 ) -> Result<(), StatusCode> {
-    rest_debug!("(health_check) entry.");
+    rest_debug!("entry.");
 
     let mut ok = true;
 
     if grpc_clients.gis.is_ready(ReadyRequest {}).await.is_err() {
-        rest_error!("(health_check) svc-gis client unavailable.");
+        rest_error!("svc-gis client unavailable.");
         ok = false;
     };
 
     match ok {
         true => {
-            rest_debug!("(health_check) healthy, all dependencies running.");
+            rest_debug!("healthy, all dependencies running.");
             Ok(())
         }
         false => {
-            rest_error!("(health_check) unhealthy, 1+ dependencies down.");
+            rest_error!("unhealthy, 1+ dependencies down.");
             Err(StatusCode::SERVICE_UNAVAILABLE)
         }
     }

@@ -43,3 +43,6 @@ multirotor
 uatype
 timeframe
 lookback
+Rnever
+deque
+oneshot

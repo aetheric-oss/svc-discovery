@@ -20,6 +20,14 @@ pub struct Config {
     pub gis_host_grpc: String,
     /// port for the gis gRPC server
     pub gis_port_grpc: u16,
+    /// host for the DSS
+    pub dss_host: String,
+    /// port for the DSS
+    pub dss_port: u16,
+    /// host for the oauth server
+    pub oauth_host: String,
+    /// port for the oauth server
+    pub oauth_port: u16,
     /// Rate limit - requests per second for REST requests
     pub rest_request_limit_per_second: u8,
     /// Enforces a limit on the concurrent number of requests the underlying service can handle
@@ -44,6 +52,10 @@ impl Config {
             log_config: String::from("log4rs.yaml"),
             gis_host_grpc: String::from("localhost"),
             gis_port_grpc: 50052,
+            dss_host: String::from("localhost"),
+            dss_port: 50054,
+            oauth_host: String::from("localhost"),
+            oauth_port: 50053,
             rest_request_limit_per_second: 2,
             rest_concurrency_limit_per_service: 5,
             rest_cors_allowed_origin: String::from("http://localhost:3000"),
@@ -62,6 +74,10 @@ impl Config {
             .set_default("log_config", default_config.log_config)?
             .set_default("gis_host_grpc", default_config.gis_host_grpc)?
             .set_default("gis_port_grpc", default_config.gis_port_grpc)?
+            .set_default("dss_host", default_config.dss_host)?
+            .set_default("dss_port", default_config.dss_port)?
+            .set_default("oauth_host", default_config.oauth_host)?
+            .set_default("oauth_port", default_config.oauth_port)?
             .set_default(
                 "rest_concurrency_limit_per_service",
                 default_config.rest_concurrency_limit_per_service,

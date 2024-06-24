@@ -6,8 +6,108 @@ configs:
   dot-env:
     file: .env
 
+volumes:
+  cockroachdb:
+
 services:
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 9999:8080
+
+  # https://github.com/interuss/monitoring/tree/main/monitoring/uss_qualifier
+  interuss-uss-qualifier:
+    container_name: interuss-uss-qualifier
+    image: interuss/monitoring:latest
+    working_dir: /app/monitoring/uss_qualifier
+    depends_on:
+      web-server:
+        condition: service_healthy
+      interuss-dss:
+        condition: service_started
+      oauth:
+        condition: service_healthy
+      dozzle:
+        condition: service_started
+    volumes:
+      - type: bind
+        source: ./out
+        target: /app/monitoring/uss_qualifier/output
+    environment:
+      - AUTH_SPEC=DummyOAuth(http://${OAUTH_HOST}:${OAUTH_PORT}/token,uss_qualifier)
+      - AUTH_SPEC_2=DummyOAuth(http://${OAUTH_HOST}:${OAUTH_PORT}/token,uss_qualifier_2)
+    command: >
+      python main.py --config configurations.dev.uspace &&
+      make_artifacts.sh configurations.dev.uspace output/report.json
+
+  cockroachdb:
+    container_name: discovery-cockroachdb
+    image: cockroachdb/cockroach:v21.2.7
+    ports:
+      - 26257:26257
+      - ${COCKROACHDB_PORT}:8080
+    healthcheck:
+      test: "curl -sf http://localhost:8080 > /dev/null"
+      interval: 2s
+      timeout: 1s
+      retries: 3
+    volumes:
+      - type: volume
+        source: cockroachdb
+        target: /cockroach/cockroach-data
+    command: start-single-node --insecure    
+  
+  interuss-dss-init:
+    container_name: interuss-dss-init
+    image: interuss/dss:latest
+    depends_on:
+      cockroachdb:
+        condition: service_healthy
+    command: >
+      sh -c "db-manager --schemas_dir /db-schemas/rid --db_version latest --cockroach_host cockroachdb &&
+      db-manager --schemas_dir /db-schemas/scd --db_version latest --cockroach_host cockroachdb"
+
+  # https://github.com/interuss/dss/blob/master/build/dev/standalone_instance.md
+  interuss-dss:
+    container_name: interuss-dss
+    image: interuss/dss:latest
+    depends_on:
+      cockroachdb:
+        condition: service_healthy
+      interuss-dss-init:
+        condition: service_completed_successfully
+    ports:
+      - ${DSS_PORT}:${DSS_PORT}
+    healthcheck:
+      test: curl -f http://localhost:8082/healthy || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    command: >
+      core-service -public_key_files /test-certs/auth2.pem -enable_http -enable_scd -dump_requests -log_format console -cockroach_host cockroachdb -addr :${DSS_PORT} -accepted_jwt_audiences localhost
+
+  oauth:
+    container_name: interuss-dummy-oauth
+    # https://github.com/interuss/dss/tree/master/cmds/dummy-oauth
+    image: interuss/dummy-oauth:latest
+    ports:
+      - ${OAUTH_PORT}:${OAUTH_PORT}
+    command: --private_key_file /var/test-certs/auth2.key
+    healthcheck:
+      test: curl -f http://localhost:${OAUTH_PORT}/token?sub=uss1&intended_audience=uss2&scope=dss.read.identification_service_areas&issuer=dummy_oauth
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
   web-server:
+    depends_on:
+      oauth:
+        condition: service_healthy
     extends:
       file: docker-compose-base.yml
       service: web-server
@@ -17,6 +117,10 @@ services:
       - REST_REQUEST_LIMIT_PER_SECOND
       - REST_CONCURRENCY_LIMIT_PER_SERVICE
       - REST_CORS_ALLOWED_ORIGIN
+      - OAUTH_HOST
+      - OAUTH_PORT
+      - DSS_HOST
+      - DSS_PORT
 
   example:
     extends:

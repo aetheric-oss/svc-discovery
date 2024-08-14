@@ -1,0 +1,42 @@
+## DO NOT EDIT!
+# This file was provisioned by OpenTofu
+# File origin: https://github.com/aetheric-oss/tofu-github/tree/main/src/modules/vars/templates/rust/all/deny.toml
+[graph]
+# cargo-deny is really only ever intended to run on the "normal" tier-1 targets
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+]
+all-features = true
+
+[advisories]
+
+[bans]
+multiple-versions = "deny"
+wildcards = 'deny'
+deny = []
+skip = []
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+
+[licenses]
+# We want really high confidence when inferring licenses from text
+confidence-threshold = 0.93
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "MIT",
+    "MPL-2.0",
+    "BSD-3-Clause",
+    "BSL-1.0", # Boost Software License 1.0
+    "Unicode-DFS-2016",
+    "Zlib",
+    "Unlicense",
+    "ISC"
+]
+exceptions = []
+

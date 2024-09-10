@@ -1,7 +1,7 @@
 [package]
 description = "Aetheric discovery service GRPC client"
 name        = "svc-discovery-client-grpc"
-version     = "0.0.2-develop.6"
+version     = "0.1.0"
 
 categories.workspace   = true
 edition.workspace      = true

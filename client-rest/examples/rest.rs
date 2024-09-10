@@ -1,9 +1,10 @@
 //! Example communication with this service
 
-use chrono::Utc;
+use hyper::client::connect::HttpConnector;
 use hyper::{Body, Client, Method, Request, Response};
 use hyper::{Error, StatusCode};
-use svc_template_rust_client_rest::types::*;
+use lib_common::grpc::get_endpoint_from_env;
+use svc_discovery_client_rest::types::*;
 
 fn evaluate(resp: Result<Response<Body>, Error>, expected_code: StatusCode) -> (bool, String) {
     let mut ok = true;
@@ -24,33 +25,29 @@ fn evaluate(resp: Result<Response<Body>, Error>, expected_code: StatusCode) -> (
     (ok, result_str)
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("NOTE: Ensure the server is running, or this example will fail.");
-
-    let rest_port = std::env::var("HOST_PORT_REST").unwrap_or_else(|_| "8000".to_string());
-
-    // let host_port = env!("HOST_PORT");
-    let url = format!("http://0.0.0.0:{rest_port}");
+async fn uss(
+    url: &str,
+    client: &mut Client<HttpConnector>,
+) -> Result<bool, Box<dyn std::error::Error>> {
     let mut ok = true;
-    let client = Client::builder()
-        .pool_idle_timeout(std::time::Duration::from_secs(10))
-        .build_http();
 
-    // POST /template/example
+    // GET /uss/get_flights
     {
-        let data = ExampleRequest {
-            id: "abcdef12".to_string(),
-            timestamp: Utc::now(),
+        let data = GetFlightsRequest {
+            view: "0.0,0.0,0.0,0.0".to_string(),
+            recent_positions_duration: 10.,
         };
 
-        let data_str = serde_json::to_string(&data).unwrap();
-        let uri = format!("{}/template/example", url);
+        let uri = format!(
+            "{}/uss/flights?view={}&recent_positions_duration={}",
+            url, data.view, data.recent_positions_duration
+        );
+
         let req = Request::builder()
-            .method(Method::POST)
+            .method(Method::GET)
             .uri(uri.clone())
             .header("content-type", "application/json")
-            .body(Body::from(data_str))
+            .body(Body::empty())
             .unwrap();
 
         let resp = client.request(req).await;
@@ -59,6 +56,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         println!("{}: {}", uri, result_str);
     }
+
+    Ok(ok)
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("NOTE: Ensure the server is running, or this example will fail.");
+
+    let (host, port) = get_endpoint_from_env("SERVER_HOSTNAME", "SERVER_PORT_REST");
+    let url = format!("http://{host}:{port}");
+    let mut ok = true;
+    let mut client = Client::builder()
+        .pool_idle_timeout(std::time::Duration::from_secs(10))
+        .build_http();
+
+    ok &= uss(&url, &mut client).await?;
 
     if ok {
         println!("\u{1F9c1} All endpoints responded!");

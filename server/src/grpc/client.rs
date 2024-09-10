@@ -1,126 +1,58 @@
 //! gRPC client helpers implementation
 
-// FIXME import other microservices' GRPC clients
-// pub use svc_storage_client_grpc::adsb::rpc_service_client::RpcServiceClient as AdsbClient;
-use futures::lock::Mutex;
-use std::sync::Arc;
-pub use tonic::transport::Channel;
+use svc_gis_client_grpc::prelude::Client;
+use svc_gis_client_grpc::prelude::GisClient;
+use tokio::sync::OnceCell;
+
+pub(crate) static CLIENTS: OnceCell<GrpcClients> = OnceCell::const_new();
+
+/// Returns CLIENTS, a GrpcClients object with default values.
+/// Uses host and port configurations using a Config object generated from
+/// environment variables.
+/// Initializes CLIENTS if it hasn't been initialized yet.
+pub async fn get_clients() -> &'static GrpcClients {
+    CLIENTS
+        .get_or_init(|| async move {
+            let config = crate::Config::try_from_env().unwrap_or_default();
+            GrpcClients::default(config)
+        })
+        .await
+}
 
 /// Struct to hold all gRPC client connections
 #[derive(Clone, Debug)]
 #[allow(missing_copy_implementations)]
 pub struct GrpcClients {
-    // FIXME clients here
-    // pub adsb: GrpcClient<AdsbClient<Channel>>,
+    /// A GrpcClient provided by the svc_gis_client_grpc module
+    pub gis: GisClient,
 }
 
-/// Struct to define a gRPC client
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub struct GrpcClient<T> {
-    inner: Arc<Mutex<Option<T>>>,
-    address: String,
-}
-
-/// Returns a string in http://host:port format from provided
-/// environment variables
-/// #[allow(dead_code)]
-#[allow(dead_code)]
-fn get_grpc_endpoint(env_host: &str, env_port: &str) -> String {
-    grpc_debug!("(get_grpc_endpoint) entry");
-    let port = match std::env::var(env_port) {
-        Ok(s) => s,
-        Err(_) => {
-            grpc_error!("(env) {} undefined.", env_port);
-            "".to_string()
-        }
-    };
-    let host = match std::env::var(env_host) {
-        Ok(s) => s,
-        Err(_) => {
-            grpc_error!("(env) {} undefined.", env_host);
-            "".to_string()
-        }
-    };
-
-    let full = format!("http://{host}:{port}");
-    grpc_info!("(get_grpc_endpoint) full address: {}", full);
-    full
-}
-
-impl<T> GrpcClient<T> {
-    /// Invalidates a gRPC client by setting it to [`None`]
-    #[allow(dead_code)]
-    pub async fn invalidate(&mut self) {
-        let arc = Arc::clone(&self.inner);
-        let mut client = arc.lock().await;
-        *client = None;
-    }
-
-    /// Creates a new gRPC client object
-    pub fn new(env_host: &str, env_port: &str) -> Self {
-        let opt: Option<T> = None;
-        GrpcClient {
-            inner: Arc::new(Mutex::new(opt)),
-            address: get_grpc_endpoint(env_host, env_port),
-        }
-    }
-}
-
-#[allow(unused_macros)]
-macro_rules! grpc_client {
-    ( $client: ident, $name: expr ) => {
-        impl GrpcClient<$client<Channel>> {
-            pub async fn get_client(&mut self) -> Option<$client<Channel>> {
-                grpc_debug!("(get_client) {} entry", $name);
-
-                let arc = Arc::clone(&self.inner);
-
-                // if already connected, return the client
-                let client = arc.lock().await;
-                if client.is_some() {
-                    return client.clone();
-                }
-
-                grpc_debug!(
-                    "(grpc) connecting to {} server at {}",
-                    $name,
-                    self.address.clone()
-                );
-                let result = $client::connect(self.address.clone()).await;
-                match result {
-                    Ok(client) => {
-                        grpc_info!(
-                            "(grpc) success: connected to {} server at {}",
-                            $name,
-                            self.address.clone()
-                        );
-                        Some(client)
-                    }
-                    Err(e) => {
-                        grpc_error!(
-                            "(grpc) couldn't connect to {} server at {}; {}",
-                            $name,
-                            self.address,
-                            e
-                        );
-                        None
-                    }
-                }
-            }
-        }
-    };
-}
-
-// FIXME - call grpc_client macro for all required clients here. Eg:
-// grpc_client!(AdsbClient, "adsb");
-
-impl Default for GrpcClients {
-    /// Creates default clients
-    fn default() -> Self {
+impl GrpcClients {
+    /// Create new GrpcClients with defaults
+    pub fn default(config: crate::config::Config) -> Self {
         GrpcClients {
-            // FIXME - add other clients here
-            // adsb: GrpcClient::<AdsbClient<Channel>>::new("ADSB_HOST_GRPC", "ADSB_PORT_GRPC"),
+            gis: GisClient::new_client(&config.gis_host_grpc, config.gis_port_grpc, "gis"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lib_common::logger::get_log_handle;
+    use svc_gis_client_grpc::prelude::Client as GisClient;
+
+    #[tokio::test]
+    async fn test_grpc_clients_default() {
+        get_log_handle().await;
+        ut_info!("Start.");
+
+        let clients = get_clients().await;
+
+        let gis = &clients.gis;
+        ut_debug!("gis: {:?}", gis);
+        assert_eq!(gis.get_name(), "gis");
+
+        ut_info!("Success.");
     }
 }
